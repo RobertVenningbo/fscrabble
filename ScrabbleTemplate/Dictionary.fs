@@ -32,6 +32,7 @@ module internal Dictionary
                 match Map.tryFind x d with
                 |Some (b,d')    -> Map.add x (b,Node(aux xs d')) d
                 |None           -> Map.add x (false, Node(aux xs (empty ()))) d
+            |[] -> Map.empty //so compiler isnt a bitch
         Node(aux (Array.toList (s.ToCharArray () )) dict)
 
     let step c (Node d) = Map.tryFind c d 
