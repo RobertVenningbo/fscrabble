@@ -45,13 +45,17 @@
     let push : SM<unit> = 
         S (fun s -> Success ((), {s with vars = Map.empty :: s.vars}))
 
-    let pop : SM<unit> = failwith "Not implemented"      
+    let pop : SM<unit> = 
+        S (fun s -> Success ((), {s with vars = s.vars |> List.tail})) 
 
-    let wordLength : SM<int> = failwith "Not implemented"      
+    let wordLength : SM<int> = 
+        S (fun s -> Success (s.word.Length, s))
 
-    let characterValue (pos : int) : SM<char> = failwith "Not implemented"      
+    let characterValue (pos : int) : SM<char> = 
+        S (fun s -> if s.word.Length <= pos || pos < 0 then Failure (IndexOutOfBounds pos) else Success(fst s.word.[pos],s))
 
-    let pointValue (pos : int) : SM<int> = failwith "Not implemented"      
+    let pointValue (pos : int) : SM<int> = 
+        S (fun s -> if s.word.Length <= pos || pos < 0 then Failure (IndexOutOfBounds pos) else Success(snd s.word.[pos], s))
 
     let lookup (x : string) : SM<int> = 
         let rec aux =
@@ -67,5 +71,25 @@
               | Some v -> Success (v, s)
               | None   -> Failure (VarNotFound x))
 
-    let declare (var : string) : SM<unit> = failwith "Not implemented"   
-    let update (var : string) (value : int) : SM<unit> = failwith "Not implemented"      
+    let declare (var : string) : SM<unit> = 
+        S (fun s -> 
+              match s.vars with
+              | [] -> Success ((), s)
+              | m::ms -> if Map.containsKey var m then Failure (VarExists var) 
+                         elif Set.contains var s.reserved then Failure (ReservedName var) 
+                         else Success ((), {s with vars = Map.add var 0 m::ms}))
+          
+
+    let update (var : string) (value : int) : SM<unit> = 
+        let rec aux acc =
+            function
+            | [] -> None
+            | m :: ms ->
+                match Map.tryFind var m with 
+                | Some v -> Some (acc@([Map.add var value m])@ms) 
+                | None -> aux (acc@[m]) ms
+
+        S (fun s -> 
+              match aux [] (s.vars) with
+              | Some v -> Success (() ,{s with vars = v})
+              | None   -> Failure (VarNotFound var))   

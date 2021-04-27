@@ -128,10 +128,10 @@
         
     let prog = new StateBuilder()
 
-    let arithEval2 a = failwith "Not implemented"
-    let charEval2 c = failwith "Not implemented"
+    let arithEval2 a    = failwith "Not implemented"
+    let charEval2 c     = failwith "Not implemented"
     let rec boolEval2 b = failwith "Not implemented"
-    let stmntEval2 stm = failwith "Not implemented"
+    let stmntEval2 stm  = failwith "Not implemented"
 
 (* Part 4 *) 
 
@@ -144,9 +144,9 @@
                                                 | Success id -> id
                                                 | Failure _ -> 0
 
-    //type coord = int * int
+    type coord = int * int
 
-    //type boardFun = coord -> Result<squareFun option, Error> 
+    type boardFun = coord -> Result<squareFun option, Error> 
 
     let stmntToBoardFun s (m : Map<int, 'a>) = 
         fun (x, y) -> 
@@ -157,15 +157,3 @@
                                                 | Some s -> Some s
                                                 | None -> None
                                 | Failure f -> None
-
-    //type board = {
-    //    center        : coord
-    //    defaultSquare : squareFun
-    //    squares       : boardFun
-    //}
-
-    //let mkBoard (c : coord) (defaultSq : stm) (boardStmnt : stm ) (ids : list<int * stm>) = { 
-    //    center = c; 
-    //    defaultSquare = stmntToSquareFun defaultSq; 
-    //    squares = stmntToBoardFun boardStmnt (List.map (fun (k, sq) -> (k, stmntToSquareFun sq)) ids |> Map.ofList)  
-    //}
