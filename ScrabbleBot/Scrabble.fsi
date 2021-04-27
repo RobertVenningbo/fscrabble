@@ -1,4 +1,4 @@
-﻿namespace NiceScrabbleID
+﻿namespace Scrbbl
 
 module Scrabble =
 
