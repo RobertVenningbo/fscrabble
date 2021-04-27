@@ -129,17 +129,7 @@ module internal Parser
     do sref2 := choice [DeclareParse; AssParse; ITEParse; ITParse; WhileParse]
 
     (* These five types will move out of this file once you start working on the project *)
-    type coord      = int * int
     type squareProg = Map<int, string>
-    //type boardProg  = {
-    //        prog       : string;
-    //        squares    : Map<int, squareProg>
-    //        usedSquare : int
-    //        center     : coord
-    //        isInfinite : bool   // For pretty-printing purposes only
-    //        ppSquare   : string // For pretty-printing purposes only
-    //    }
-
     type word   = (char * int) list
     type square = Map<int, word -> int -> int -> int>
 
