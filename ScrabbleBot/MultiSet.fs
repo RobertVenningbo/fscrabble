@@ -7,7 +7,7 @@
             | M m -> 
                 let s = Map.fold (fun acc a b -> acc + "(" + a.ToString() + ", #" + b.ToString() + "), ") "{" m
                 s.[..String.length s - 3] + "}"
-
+    
     let empty                   = M Map.empty
     let isEmpty (M s)           = Map.isEmpty s
     let size (M s)              = Map.foldBack(fun k v acc -> v + acc) s 0u
@@ -24,15 +24,14 @@
     let map f s                 = fold (fun acc k v -> add (f k) v acc) empty s
     let ofList lst              = List.fold (fun acc x -> addSingle x acc) empty lst
     let toList s                = fold (fun acc k v -> acc@[for _ in 1..int v -> k]) [] s
-
+    
     let union s1 s2             = fold (fun acc k v -> let num = numItems k acc 
                                                        if num >= v then acc 
                                                        else add k (v - num) acc) s2 s1
 
     let sum s1 s2               = fold (fun acc k v -> add k v acc) s1 s2
     let subtract s1 s2          = fold (fun acc k v -> remove k v acc) s1 s2
-
+    
     let intersection s1 s2      = fold (fun acc k v -> let num = numItems k acc 
                                                        if num < v then acc 
                                                        else add k (v - num) acc) s2 s1
-
