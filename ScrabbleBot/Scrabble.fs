@@ -44,9 +44,10 @@ module State =
         dict          : ScrabbleUtil.Dictionary.Dict
         playerNumber  : uint32
         hand          : MultiSet.MS<uint32>
+        tilesPlaced   : Map<coord, char*int>
     }
 
-    let mkState b d pn h = {board = b; dict = d;  playerNumber = pn; hand = h }
+    let mkState b d pn h t= {board = b; dict = d;  playerNumber = pn; hand = h; tilesPlaced = t }
 
     let board st         = st.board
     let dict st          = st.dict
@@ -75,15 +76,16 @@ module Scrabble =
             match msg with
             | RCM (CMPlaySuccess(ms, points, newPieces)) ->
                 (* Successful play by you. Update your state (remove old tiles, add the new ones, change turn, etc) *)
-                let hand = State.hand st
-                let board = State.hand st      
-                let dict = State.dict st 
-                let playerNumber = State.playerNumber st
-                
+                //let hand = State.hand st
+                //let board = State.board st      
+                //let dict = State.dict st 
+                //let playerNumber = State.playerNumber st
+                let tilesPlaced = List.fold(fun acc (coord,(_,tile)) -> Map.add coord tile acc) st.tilesPlaced ms
+
                 let fakeHand (*actually the hand after removed pieces*) = List.fold(fun acc (_,(important,_)) -> MultiSet.removeSingle important acc) st.hand ms
                 let yesHand (*this is the new hand*) = List.fold(fun acc (a,_) -> MultiSet.addSingle a acc) fakeHand newPieces
 
-                let st' = {st with hand = yesHand} // This state needs to be updated
+                let st' = {st with hand = yesHand; tilesPlaced = tilesPlaced} // This state needs to be updated
                 aux st'
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
@@ -124,5 +126,5 @@ module Scrabble =
                   
         let handSet = List.fold (fun acc (x, k) -> MultiSet.add x k acc) MultiSet.empty hand
 
-        fun () -> playGame cstream tiles (State.mkState board dict playerNumber handSet)
+        fun () -> playGame cstream tiles (State.mkState board dict playerNumber handSet Map.empty)
         
