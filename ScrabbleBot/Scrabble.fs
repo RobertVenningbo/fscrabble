@@ -1,4 +1,4 @@
-﻿namespace Scrbbl
+﻿namespace scrbbl
 
 open ScrabbleUtil
 open ScrabbleUtil.ServerCommunication
@@ -53,6 +53,7 @@ module State =
     let dict st          = st.dict
     let playerNumber st  = st.playerNumber
     let hand st          = st.hand
+ 
 
     let rmPiecesFromHand piece st =
         let newHand = List.fold(fun acc (_,(important,_)) -> MultiSet.removeSingle important acc) st.hand piece
@@ -60,7 +61,11 @@ module State =
 
     let addPiecesToHand piece st =
         let newHand = List.fold(fun acc (a,_) -> MultiSet.addSingle a acc) st.hand piece
-        {st with hand = newHand}
+        newHand
+
+
+    
+
 
 module Scrabble =
     open System.Threading
@@ -89,11 +94,11 @@ module Scrabble =
                 //let dict = State.dict st 
                 //let playerNumber = State.playerNumber st
                 let tilesPlaced = List.fold(fun acc (coord,(_,tile)) -> Map.add coord tile acc) st.tilesPlaced ms
-
+                
                 let fakeHand (*actually the hand after removed pieces*) = State.rmPiecesFromHand ms st
                 let yesHand (*this is the new hand*) = State.addPiecesToHand newPieces fakeHand
 
-                let st' = yesHand // This state needs to be updated
+                let st' = {st with tilesPlaced = tilesPlaced; hand = yesHand} // This state needs to be updated
                 aux st'
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
