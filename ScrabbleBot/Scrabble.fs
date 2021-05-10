@@ -53,22 +53,34 @@ module State =
     let dict st          = st.dict
     let playerNumber st  = st.playerNumber
     let hand st          = st.hand
- 
-
-    let rmPiecesFromHand piece st =
-        let newHand = List.fold(fun acc (_,(important,_)) -> MultiSet.removeSingle important acc) st.hand piece
-        {st with hand = newHand}
-
-    let addPiecesToHand piece st =
-        let newHand = List.fold(fun acc (a,_) -> MultiSet.addSingle a acc) st.hand piece
-        newHand
-
-
-    
-
 
 module Scrabble =
     open System.Threading
+
+    let findPlay (hand:MultiSet.MS<uint32>) (dictionary:Dictionary.Dict) (tiles:Map<uint32, tile>) = 
+        
+        let keyToPlayString (key:uint32) = 
+            (Map.find(key) tiles) |> Set.toList |> fun x -> x.[0] |> fun (c, v) -> string key + string c + string v
+
+        let keyToChar (key:uint32) = 
+            Map.find(key) tiles |> Set.toList |> fun x -> x.[0] |> fun (c, _) -> c
+
+        let rec aux (hand:MultiSet.MS<uint32>) (subDictionary:Dictionary.Dict) =
+            List.fold(fun acc x -> 
+                if List.isEmpty acc then 
+                    if Dictionary.lookup (string (keyToChar x)) subDictionary then x::acc
+                    else
+                        match Dictionary.step (keyToChar x) subDictionary with
+                            | Some robert -> 
+                                debugPrint (sprintf "yeeehonk") // keep the debug lines. They are useful.
+                                let check = aux (MultiSet.removeSingle x hand) subDictionary
+                                if check.IsEmpty then acc else x::check@acc
+                            | None -> acc
+                else acc
+            ) List.empty<uint32> (MultiSet.toList hand)
+
+        let playKeys = aux hand dictionary
+        List.fold(fun acc key -> acc + "0 " + string (List.findIndex(fun x -> x = key) playKeys) + " " + keyToPlayString key + " ") "" playKeys
 
     let playGame cstream pieces (st : State.state) =
 
@@ -78,7 +90,9 @@ module Scrabble =
             // remove the force print when you move on from manual input (or when you have learnt the format)
             forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
             let input =  System.Console.ReadLine()
-            let move = RegEx.parseMove input
+             
+            let word = findPlay st.hand st.dict pieces
+            let move = RegEx.parseMove word
 
             debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
             send cstream (SMPlay move)
@@ -94,11 +108,11 @@ module Scrabble =
                 //let dict = State.dict st 
                 //let playerNumber = State.playerNumber st
                 let tilesPlaced = List.fold(fun acc (coord,(_,tile)) -> Map.add coord tile acc) st.tilesPlaced ms
-                
-                let fakeHand (*actually the hand after removed pieces*) = State.rmPiecesFromHand ms st
-                let yesHand (*this is the new hand*) = State.addPiecesToHand newPieces fakeHand
 
-                let st' = {st with tilesPlaced = tilesPlaced; hand = yesHand} // This state needs to be updated
+                let fakeHand (*actually the hand after removed pieces*) = List.fold(fun acc (_,(important,_)) -> MultiSet.removeSingle important acc) st.hand ms
+                let yesHand (*this is the new hand*) = List.fold(fun acc (a,_) -> MultiSet.addSingle a acc) fakeHand newPieces
+
+                let st' = {st with hand = yesHand; tilesPlaced = tilesPlaced} // This state needs to be updated
                 aux st'
             | RCM (CMPlayed (pid, ms, points)) ->
                 (* Successful play by other player. Update your state *)
