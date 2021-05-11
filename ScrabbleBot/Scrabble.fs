@@ -71,18 +71,22 @@ module Scrabble =
     open System.Threading
 
 
-    let findMove hand board dict tp startCoord =
-        let rec aux tmpHand subDict coord currentMove =
+    let findMove (hand:MultiSet.MS<uint32>) dict (tp:Map<coord,char*int>) startCoord (pieces:Map<uint32,tile>)=
+        let rec aux (tmpHand:MultiSet.MS<uint32>) subDict coord currentMove =
             match Map.tryFind coord tp with
             |Some c -> //if there's something on coord...
-                match Dictionary.step c subDict with
-                |Some newDict -> aux tmpHand newDict coord
-                |None -> Map.empty //return moves list.
-            |None -> MultiSet.fold (fun list (c:char) _ -> 
-                                    match Dictionary.step c subDict with
-                                    |Some (b,newDict) -> if b then list::(currentMove::c) else aux (MultiSet.removeSingle c tmpHand) newDict
-                                    |None -> list
-                                    ) Map.empty tmpHand
+                match Dictionary.step (fst c) subDict with
+                |Some (_,newDict) -> aux tmpHand newDict coord currentMove
+                |None -> List.empty //return moves list.
+            |None -> MultiSet.fold (fun list id _ -> 
+                                                    match Map.tryFind id pieces with
+                                                    |Some tile ->  
+                                                                 let ch,value = Set.minElement tile //wildcard case
+                                                                 match Dictionary.step ch subDict with 
+                                                                 |Some (b,newDict) -> if b then (id::currentMove)::list else aux (MultiSet.removeSingle id tmpHand) newDict coord currentMove
+                                                                 |None -> list                                                                 
+                                                    |None -> failwith "howdy bitch"
+                                                    ) List.empty tmpHand
         aux hand dict startCoord List.empty
 
     let playGame cstream pieces (st : State.state) =
@@ -92,6 +96,7 @@ module Scrabble =
 
             // remove the force print when you move on from manual input (or when you have learnt the format)
             forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
+            debugPrint(sprintf "Found words: %A" (findMove st.hand st.dict st.tilesPlaced st.board.center pieces))
             let input =  System.Console.ReadLine()
             let move = RegEx.parseMove input
            
