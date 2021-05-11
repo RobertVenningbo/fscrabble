@@ -7,6 +7,7 @@ module internal Dictionary
     // If you have made a lookup function you may include it here, but it will be generated for you by the project.
 
     let empty () = Node Map.empty
+
     let lookup (s:string) dict = 
         let rec aux charlist (Node d) =
             match charlist with
@@ -36,7 +37,6 @@ module internal Dictionary
         Node(aux (Array.toList (s.ToCharArray () )) dict)
 
     let step c (Node d) = Map.tryFind c d 
-
 
     // Only implement reverse if you have made a Gaddag
     let reverse : Dict -> (bool * Dict) option = fun _ -> failwith "Not implemented"

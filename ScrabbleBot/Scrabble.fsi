@@ -1,4 +1,4 @@
-﻿namespace Scrbbl
+﻿namespace scrbbl
 
 module Scrabble =
 

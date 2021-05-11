@@ -1,4 +1,4 @@
-﻿namespace Scrbbl
+﻿namespace scrbbl
 
 open ScrabbleUtil
 open ScrabbleUtil.ServerCommunication
@@ -57,15 +57,43 @@ module State =
 module Scrabble =
     open System.Threading
 
+    let findPlay (hand:MultiSet.MS<uint32>) (dictionary:Dictionary.Dict) (tiles:Map<uint32, tile>) = 
+        
+        let keyToPlayString (key:uint32) = 
+            (Map.find(key) tiles) |> Set.toList |> fun x -> x.[0] |> fun (c, v) -> string key + string c + string v
+
+        let keyToChar (key:uint32) = 
+            Map.find(key) tiles |> Set.toList |> fun x -> x.[0] |> fun (c, _) -> c
+
+        let rec aux (hand:MultiSet.MS<uint32>) (subDictionary:Dictionary.Dict) =
+            List.fold(fun acc x -> 
+                if List.isEmpty acc then 
+                    if Dictionary.lookup (string (keyToChar x)) subDictionary then x::acc
+                    else
+                        match Dictionary.step (keyToChar x) subDictionary with
+                            | Some robert -> 
+                                debugPrint (sprintf "yeeehonk") // keep the debug lines. They are useful.
+                                let check = aux (MultiSet.removeSingle x hand) (snd robert)
+                                if check.IsEmpty then acc else x::check@acc
+                            | None -> 
+                                acc
+                else acc
+            ) List.empty<uint32> (MultiSet.toList hand)
+
+        let playKeys = aux hand dictionary
+        List.fold(fun acc key -> acc + "0 " + string (List.findIndex(fun x -> x = key) playKeys) + " " + keyToPlayString key + " ") "" playKeys
+
     let playGame cstream pieces (st : State.state) =
 
         let rec aux (st : State.state) =
             Print.printHand pieces (State.hand st)
 
             // remove the force print when you move on from manual input (or when you have learnt the format)
-            forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
-            let input =  System.Console.ReadLine()
-            let move = RegEx.parseMove input
+            //forcePrint "Input move (format '(<x-coordinate> <y-coordinate> <piece id><character><point-value> )*', note the absence of space between the last inputs)\n\n"
+            //let input =  System.Console.ReadLine()
+             
+            let word = findPlay st.hand st.dict pieces
+            let move = RegEx.parseMove word
 
             debugPrint (sprintf "Player %d -> Server:\n%A\n" (State.playerNumber st) move) // keep the debug lines. They are useful.
             send cstream (SMPlay move)
